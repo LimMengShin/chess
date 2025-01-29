@@ -1,0 +1,206 @@
+let board;
+let game = new Chess();
+var whiteSquareGrey = "#a9a9a9";
+var blackSquareGrey = "#696969";
+let pendingPromotion = null;
+
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function initBoard() {
+    var config = {
+        draggable: true,
+        position: "start",
+        onDragStart: onDragStart,
+        onDrop: handleMove,
+        onMouseoutSquare: onMouseoutSquare,
+        onMouseoverSquare: onMouseoverSquare,
+        onSnapEnd: onSnapEnd,
+        pieceTheme: "/static/img/pieces/{piece}.png"
+    };
+    board = ChessBoard("board", config);
+}
+
+$("#eloSlider").on("input", function() {
+    const elo = $(this).val();
+    $("#eloValue").text(elo);
+    
+    $.ajax({
+        url: "/set_elo",
+        method: "POST",
+        contentType: "application/json",
+        data: JSON.stringify({ elo: parseInt(elo) })
+    });
+});
+
+function removeGreySquares () {
+    $("#board .square-55d63").css("background", "");
+}
+  
+function greySquare (square) {
+    var $square = $("#board .square-" + square);
+  
+    var background = whiteSquareGrey;
+    if ($square.hasClass("black-3c85d")) {
+        background = blackSquareGrey;
+    }
+  
+    $square.css("background", background);
+}
+  
+function onDragStart (source, piece) {
+    // do not pick up pieces if the game is over
+    if (game.game_over()) return false;
+  
+    // or if it's not that side's turn
+    if ((game.turn() === "w" && piece.search(/^b/) !== -1) ||
+        (game.turn() === "b" && piece.search(/^w/) !== -1)) {
+        return false;
+    }
+}
+  
+function onMouseoverSquare (square, piece) {
+    // get list of possible moves for this square
+    var moves = game.moves({
+        square: square,
+        verbose: true
+    });
+  
+    // exit if there are no moves available for this square
+    if (moves.length === 0) return;
+  
+    // highlight the square they moused over
+    greySquare(square);
+  
+    // highlight the possible squares for this piece
+    for (var i = 0; i < moves.length; i++) {
+        greySquare(moves[i].to);
+    }
+}
+  
+function onMouseoutSquare (square, piece) {
+    removeGreySquares();
+}
+  
+function onSnapEnd () {
+    board.position(game.fen());
+    if (pendingPromotion) {
+        showPromotionModal(pendingPromotion.source, pendingPromotion.target);
+    }
+}
+
+async function submitMove(move) {
+    try {
+        const response = await $.ajax({
+            url: "/make_move",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({ move: move.san })
+        });
+        console.log(response);
+        
+        game.load(response.fen);
+        board.position(response.fen);
+        updateMoves(response.moves);
+        
+        if (response.status === "end") {
+            if (response.winner === false) {
+                // make stockfish move
+                game.move(response.last_move);
+                board.move(response.last_move);
+                updateMoves(response.moves);
+                await sleep(200);
+                alert("You LOSE!");
+            } else if (response.winner === true) {
+                await sleep(200);
+                alert("You WIN!");
+            } else {
+                await sleep(200);
+                alert("DRAW!");
+            }
+        } else {
+            game.load(response.fen);
+            board.position(response.fen);
+            updateMoves(response.moves);
+
+            // make stockfish move
+            game.move(response.last_move);
+            board.move(response.last_move);
+            updateMoves(response.moves);
+        }
+        
+    } catch (error) {
+        console.error("Error:", error);
+    }
+}
+
+async function handleMove(source, target) {
+    removeGreySquares();
+    
+    let move = game.move({
+        from: source,
+        to: target,
+        promotion: "q"
+    });
+    console.log(move);
+    if (move === null) return "snapback";
+    if (move.flags.includes("p")) {
+        pendingPromotion = { source, target };
+        game.undo();
+        return "snapback";
+    }
+    
+    submitMove(move);
+}
+
+async function showPromotionModal(source, target) {
+    $("#promotionModal").show();
+    
+    return new Promise((resolve) => {
+        $(".promotion-piece").off("click").on("click", function() {
+            const piece = $(this).data("piece");
+            $("#promotionModal").hide();
+            
+            // make the promoted move
+            let move = game.move({
+                from: source,
+                to: target,
+                promotion: piece
+            });
+            console.log(move, source, target, piece);
+            console.log(game);
+            // board.position(game.fen());
+            pendingPromotion = null;
+            
+            submitMove(move);
+            resolve();
+        });
+    });
+}
+
+$(".close").click(function() {
+    $("#promotionModal").hide();
+    pendingPromotion = null;
+});
+
+function updateMoves(moves) {
+    let movesHtml = "";
+    for (let i = 0; i < moves.length; i += 2) {
+        movesHtml += `<div>${(i/2 + 1)}. ${moves[i]} ${moves[i+1] || ""}</div>`;
+    }
+    $("#moves").html(movesHtml);
+    $("#moves").scrollTop(function() { return this.scrollHeight; });
+}
+
+async function newGame() {
+    await $.get("/new_game");
+    game = new Chess();
+    board.start();
+    $("#moves").empty();
+}
+
+$(document).ready(function () {
+    initBoard();
+    newGame();
+});
