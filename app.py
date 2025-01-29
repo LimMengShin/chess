@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-stockfish = Stockfish(path="stockfish-ubuntu-x86-64-vnni512")
+stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512")
 stockfish.set_depth(10)
 stockfish.set_elo_rating(1500)
 
