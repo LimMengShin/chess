@@ -10,12 +10,16 @@
 </head>
 <body>
     <div class="container">
-        <div id="board" style="width: 600px"></div>
+        <div id="board" style="width: 800px"></div>
         <div class="controls">
             <button onclick="newGame()">New Game</button>
             <div class="elo-control">
-                <label>AI Strength: <span id="eloValue">1500</span> ELO</label>
-                <input type="range" id="eloSlider" min="100" max="3000" step="100" value="1500">
+                <label>Engine Strength: <span id="eloValue">1500</span> ELO</label>
+                <input type="range" id="eloSlider" min="1350" max="3000" step="50" value="1500">
+            </div>
+            <div class="move-control">
+                <button id="undoButton" onclick="undoMove()">Undo</button>
+                <button id="redoButton" onclick="redoMove()">Redo</button>
             </div>
             <div id="moves"></div>
         </div>

@@ -6,8 +6,8 @@ import os
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512")
-stockfish.set_depth(10)
+stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512", parameters={"UCI_LimitStrength": True})
+stockfish.set_depth(5)
 stockfish.set_elo_rating(1500)
 
 def get_board():
@@ -27,13 +27,17 @@ def index():
 @app.route("/new_game")
 def new_game():
     board = chess.Board()
-    save_board(board)
+    session["board"] = board.fen()
     session["moves"] = []
+    session["undone_moves"] = []
     return jsonify(status="ok")
 
 @app.route("/make_move", methods=["POST"])
 def make_move():
     try:
+        if "undone_moves" in session:
+            session["undone_moves"] = []
+            
         board = get_board()
         data = request.json
         move = data["move"]
@@ -65,7 +69,7 @@ def make_move():
         # get stockfish move
         # print(stockfish.get_parameters())
         stockfish.set_fen_position(board.fen())
-        engine_move = stockfish.get_best_move()
+        engine_move = stockfish.get_best_move_time(50)
         engine_move_san = board.san(chess.Move.from_uci(engine_move))
         board.push_uci(engine_move)
         session["moves"].append(engine_move_san)
@@ -91,6 +95,64 @@ def set_elo():
     elo = int(request.json["elo"])
     stockfish.set_elo_rating(elo)
     return jsonify(status="ok")
+
+@app.route("/undo", methods=["POST"])
+def undo_move():
+    try:
+        if "moves" not in session or len(session["moves"]) < 2:
+            return jsonify(status="error", message="No moves to undo")
+
+        undone_moves = session.get("undone_moves", [])
+        undone_moves.append(session["moves"][-2:])
+        session["undone_moves"] = undone_moves
+
+        new_moves = session["moves"][:-2]
+        board = rebuild_board_from_moves(new_moves)
+        
+        session["board"] = board.fen()
+        session["moves"] = new_moves
+        
+        return jsonify(
+            status="ok",
+            fen=board.fen(),
+            moves=new_moves
+        )
+
+    except Exception as e:
+        return jsonify(status="error", message=str(e))
+
+@app.route("/redo", methods=["POST"])
+def redo_move():
+    try:
+        if "undone_moves" not in session or len(session["undone_moves"]) == 0:
+            return jsonify(status="error", message="No moves to redo")
+
+        move_pair = session["undone_moves"].pop()
+        new_moves = session["moves"] + move_pair
+        
+        board = rebuild_board_from_moves(new_moves)
+        
+        session["board"] = board.fen()
+        session["moves"] = new_moves
+        session["undone_moves"] = session["undone_moves"]
+        
+        return jsonify(
+            status="ok",
+            fen=board.fen(),
+            moves=new_moves
+        )
+
+    except Exception as e:
+        return jsonify(status="error", message=str(e))
+
+def rebuild_board_from_moves(moves):
+    board = chess.Board()
+    for move_san in moves:
+        if "=" in move_san:
+            move_san = move_san.replace("=", "")
+        move = board.parse_san(move_san)
+        board.push(move)
+    return board
 
 if __name__ == "__main__":
     app.run(debug=True)

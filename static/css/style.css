@@ -5,7 +5,7 @@ body {
     align-items: center;
     min-height: 100vh;
     margin: 0;
-    background-color: #f0f0f0;
+    background-color: black;
 }
 
 .container {
@@ -14,7 +14,6 @@ body {
     padding: 20px;
     background-color: white;
     border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
 }
 
 .controls {
@@ -37,7 +36,7 @@ button:hover {
 }
 
 #moves {
-    max-height: 400px;
+    max-height: 600px;
     overflow-y: auto;
     padding: 10px;
     border: 1px solid #ddd;
@@ -97,4 +96,19 @@ button:hover {
 
 #eloSlider {
     width: 200px;
+}
+
+button {
+    margin: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+}
+
+.modal {
+    z-index: 1000;
+}
+
+.move-control > button {
+    float: left;
+    width: 45%;
 }

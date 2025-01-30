@@ -177,6 +177,50 @@ function updateMoves(moves) {
     $("#moves").scrollTop(function() { return this.scrollHeight; });
 }
 
+async function undoMove() {
+    try {
+        const response = await $.ajax({
+            url: "/undo",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({})
+        });
+        
+        if (response.status === "ok") {
+            game.load(response.fen);
+            board.position(response.fen);
+            updateMoves(response.moves);
+        } else {
+            alert(response.message || "Couldn't undo move");
+        }
+    } catch (error) {
+        console.error("Undo error:", error);
+        alert(error.responseJSON?.message || "Error processing undo");
+    }
+}
+
+async function redoMove() {
+    try {
+        const response = await $.ajax({
+            url: "/redo",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({})
+        });
+        
+        if (response.status === "ok") {
+            game.load(response.fen);
+            board.position(response.fen);
+            updateMoves(response.moves);
+        } else {
+            alert(response.message || "Couldn't redo move");
+        }
+    } catch (error) {
+        console.error("Redo error:", error);
+        alert(error.responseJSON?.message || "Error processing redo");
+    }
+}
+
 async function newGame() {
     await $.get("/new_game");
     game = new Chess();
