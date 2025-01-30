@@ -105,31 +105,15 @@ async function submitMove(move) {
         updateMoves(response.moves);
         
         if (response.status === "end") {
+            await sleep(200);
             if (response.winner === false) {
-                // make stockfish move
-                game.move(response.last_move);
-                board.move(response.last_move);
-                updateMoves(response.moves);
-                await sleep(200);
                 alert("You LOSE!");
             } else if (response.winner === true) {
-                await sleep(200);
                 alert("You WIN!");
             } else {
-                await sleep(200);
                 alert("DRAW!");
             }
-        } else {
-            game.load(response.fen);
-            board.position(response.fen);
-            updateMoves(response.moves);
-
-            // make stockfish move
-            game.move(response.last_move);
-            board.move(response.last_move);
-            updateMoves(response.moves);
         }
-        
     } catch (error) {
         console.error("Error:", error);
     }
@@ -185,7 +169,7 @@ $(".close").click(function() {
 });
 
 function updateMoves(moves) {
-    let movesHtml = "";
+    let movesHtml = "<b>Moves:</b>";
     for (let i = 0; i < moves.length; i += 2) {
         movesHtml += `<div>${(i/2 + 1)}. ${moves[i]} ${moves[i+1] || ""}</div>`;
     }
@@ -197,7 +181,7 @@ async function newGame() {
     await $.get("/new_game");
     game = new Chess();
     board.start();
-    $("#moves").empty();
+    $("#moves").html("<b>Moves:</b>");
 }
 
 $(document).ready(function () {
