@@ -32,16 +32,19 @@ Track all moves in a scrollable history.
 
 ## Future Improvements
 
-### 1. **Multiplayer Mode**
+### 1. **Custom Chess Engine Support**
+Enable users to upload and play against their own custom chess engine.
+
+### 2. **Multiplayer Mode**
 Add support for human vs. human matches locally or online.
 
-### 2. **Analysis Mode**
+### 3. **Analysis Mode**
 Allow users to analyse past games with engine feedback, displaying accuracy scores and move evaluations.
 
-### 3. **Opening Book Integration**
+### 4. **Opening Book Integration**
 Include an opening explorer for educational insights.
 
-### 4. **Mobile Optimisation**
+### 5. **Mobile Optimisation**
 Improve responsiveness for seamless play on smartphones and tablets.
 
 ## Demo
