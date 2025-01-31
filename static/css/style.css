@@ -14,16 +14,19 @@ body {
     padding: 20px;
     background-color: white;
     border-radius: 10px;
+    height: 93vh;
 }
 
 .controls {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
+    max-height: 100%;
 }
 
 button {
-    padding: 10px;
+    margin: 5px;
+    padding: 8px 15px;
     background-color: #4CAF50;
     color: white;
     border: none;
@@ -36,8 +39,10 @@ button:hover {
 }
 
 #moves {
-    max-height: 600px;
+    flex: 1;
     overflow-y: auto;
+    display: flex;
+    flex-direction: column;
     padding: 10px;
     border: 1px solid #ddd;
     border-radius: 5px;
@@ -98,17 +103,21 @@ button:hover {
     width: 200px;
 }
 
-button {
-    margin: 5px;
-    padding: 8px 15px;
-    cursor: pointer;
-}
-
-.modal {
-    z-index: 1000;
-}
-
 .move-control > button {
     float: left;
     width: 45%;
+}
+
+h2 {
+    margin-left: 5px;
+}
+
+h3 {
+    margin-top: 2px;
+    margin-bottom: 3px;
+}
+
+#bestDiv, #evalDiv {
+    margin-left: 5px;
+    margin-bottom: 5px;
 }

@@ -7,10 +7,6 @@ import random
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512", parameters={"UCI_LimitStrength": True})
-stockfish.set_depth(5)
-stockfish.set_elo_rating(1500)
-
 def get_board():
     if "board" not in session:
         session["board"] = chess.Board().fen()
@@ -38,6 +34,8 @@ def new_game():
     session["initial_fen"] = board.fen()
     session["moves"] = []
     session["undone_moves"] = []
+    session["elo"] = 1500
+
     return jsonify(
         status="ok",
         initial_fen=board.fen()
@@ -74,7 +72,13 @@ def make_move():
                            winner=board.outcome().winner)
 
         # get stockfish move
-        stockfish.update_engine_parameters({"UCI_Chess960": True if session.get("chess960", True) else "false"})
+        stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512", parameters={
+            "UCI_LimitStrength": "true",
+            "UCI_Chess960": "true" if session.get("chess960", True) else "false"
+        })
+        stockfish.set_depth(10)
+        stockfish.set_elo_rating(session["elo"])
+
         stockfish.set_fen_position(board.fen())
         engine_move = stockfish.get_best_move_time(50)
         engine_move_san = board.san(chess.Move.from_uci(engine_move))
@@ -89,18 +93,68 @@ def make_move():
                            winner=board.outcome().winner)
         
         save_board(board)
+
+        # get top 3 moves by stockfish + evaluation
+        new_board = get_board()
+        stockfish.set_fen_position(new_board.fen())
+        stockfish.update_engine_parameters({"Threads": 2, "Hash": 256, "Skill Level": 20, "UCI_LimitStrength": "false"})
+        top_3_moves = stockfish.get_top_moves(3)
+        evaluation = stockfish.get_evaluation()
+        print(top_3_moves, evaluation)
+
+        top_3_moves_list = []
+        eval_text = ""
+
+        for move in top_3_moves:
+            move_san = new_board.san(chess.Move.from_uci(move["Move"]))
+            text = ""
+            if move["Centipawn"]:
+                centipawn = round(move["Centipawn"]/100, 1)
+                if centipawn > 0:
+                    text = f"+{centipawn} for White"
+                elif centipawn < 0:
+                    text = f"{centipawn} for Black"
+                else:
+                    text = f"{centipawn} (Balanced)"
+            elif move["Mate"]:
+                mate = move["Mate"]
+                if mate > 0:
+                    text = f"Mate in {mate} for White"
+                else:
+                    text = f"Mate in {-mate} for Black"
+            
+            top_3_moves_list.append((move_san, text))
+        
+        if evaluation["type"] == "cp":
+            centipawn = round(evaluation["value"]/100, 1)
+            if centipawn > 0:
+                eval_text = f"+{centipawn} for White"
+            elif centipawn < 0:
+                eval_text = f"{centipawn} for Black"
+            else:
+                eval_text = f"{centipawn} (Balanced)"
+        elif evaluation["type"] == "mate":
+            mate = evaluation["value"]
+            if mate > 0:
+                eval_text = f"Mate in {mate} for White"
+            else:
+                eval_text = f"Mate in {-mate} for Black"
+        
         return jsonify(status="ok",
                        fen=board.fen(),
                        last_move=engine_move_san,
-                       moves=session["moves"])
+                       moves=session["moves"],
+                       top_3_moves=top_3_moves_list,
+                       eval_text=eval_text)
 
     except Exception as e:
+        print(e)
         return jsonify(status="error", message=str(e))
 
 @app.route("/set_elo", methods=["POST"])
 def set_elo():
     elo = int(request.json["elo"])
-    stockfish.set_elo_rating(elo)
+    session["elo"] = elo
     return jsonify(status="ok")
 
 @app.route("/undo", methods=["POST"])

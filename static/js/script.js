@@ -109,6 +109,21 @@ async function submitMove(move) {
         game.load(response.fen);
         board.position(response.fen);
         updateMoves(response.moves);
+
+        if (response.top_3_moves) {
+            top3Moves = response.top_3_moves
+            let top3Html = "<h3>Top 3 moves:</h3>";
+            for (let i = 0; i < top3Moves.length; i += 1) {
+                top3Html += `<div>${top3Moves[i][0]} | ${top3Moves[i][1]}</div>`;
+            }
+            $("#bestDiv").html(top3Html);
+        }
+
+        if (response.eval_text) {
+            evalText = response.eval_text
+            let evalHtml = `<h3>Evaluation:</h3><div>${evalText}</div>`;
+            $("#evalDiv").html(evalHtml);
+        }
         
         if (response.status === "end") {
             await sleep(200);
@@ -233,6 +248,22 @@ async function redoMove() {
     }
 }
 
+function showBestMoves() {
+    let element = document.getElementById("bestDiv");
+    element.style.display = element.style.display === "none" ? "block" : "none";
+
+    let button = document.getElementById("bestButton");
+    button.textContent = `${button.textContent === "Show Best Moves" ? "Hide Best Moves" : "Show Best Moves"}`;
+}
+
+function showEval() {
+    let element = document.getElementById("evalDiv");
+    element.style.display = element.style.display === "none" ? "block" : "none";
+
+    let button = document.getElementById("evalButton");
+    button.textContent = `${button.textContent === "Show Evaluation" ? "Hide Evaluation" : "Show Evaluation"}`;
+}
+
 function toggleMode() {
     isChess960 = !isChess960;
     updateModeButtonAndHeader();
@@ -243,7 +274,7 @@ function updateModeButtonAndHeader() {
     button.textContent = `${isChess960 ? "Switch to Standard Chess" : "Switch to Chess960"}`;
 
     const header = document.getElementById("mode");
-    header.innerText = `${isChess960 ? "Chess 960" : "Standard Chess"}`;
+    header.innerText = `${isChess960 ? "Chess960" : "Standard Chess"}`;
 
     newGame();
 }
@@ -258,5 +289,5 @@ async function newGame() {
 $(document).ready(function () {
     initBoard();
     newGame();
-    updateModeButton();
+    updateModeButtonAndHeader();
 });

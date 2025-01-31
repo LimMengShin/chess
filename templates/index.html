@@ -20,9 +20,13 @@
                 <input type="range" id="eloSlider" min="1350" max="3000" step="50" value="1500">
             </div>
             <div class="move-control">
-                <button id="undoButton" onclick="undoMove()">Undo</button>
-                <button id="redoButton" onclick="redoMove()">Redo</button>
+                <button id="undoButton" onclick="undoMove()">Undo ↺</button>
+                <button id="redoButton" onclick="redoMove()">Redo ↻</button>
             </div>
+            <button id="bestButton" onclick="showBestMoves()">Hide Best Moves</button>
+            <div id="bestDiv"></div>
+            <button id="evalButton" onclick="showEval()">Hide Evaluation</button>
+            <div id="evalDiv"></div>
             <div id="moves"></div>
         </div>
     </div>
