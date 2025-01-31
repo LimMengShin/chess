@@ -92,11 +92,16 @@ function onSnapEnd () {
 
 async function submitMove(move) {
     try {
+        let uci = move.from + move.to;
+        if (move.promotion) {
+            uci += move.promotion.toLowerCase();
+        }
+
         const response = await $.ajax({
             url: "/make_move",
             method: "POST",
             contentType: "application/json",
-            data: JSON.stringify({ move: move.san })
+            data: JSON.stringify({ move: uci })
         });
         console.log(response);
         
@@ -130,7 +135,7 @@ async function handleMove(source, target) {
     console.log(move);
     if (move === null) return "snapback";
     if (move.flags.includes("p")) {
-        pendingPromotion = { source, target };
+        pendingPromotion = { source, target, color: move.color };
         game.undo();
         return "snapback";
     }
@@ -140,6 +145,12 @@ async function handleMove(source, target) {
 
 async function showPromotionModal(source, target) {
     $("#promotionModal").show();
+    const color = pendingPromotion.color === 'w' ? 'w' : 'b';
+
+    $(".promotion-piece").each(function() {
+        const piece = $(this).data("piece");
+        $(this).text(color === 'w' ? piece.toUpperCase() : piece.toLowerCase());
+    });
     
     return new Promise((resolve) => {
         $(".promotion-piece").off("click").on("click", function() {
@@ -222,9 +233,9 @@ async function redoMove() {
 }
 
 async function newGame() {
-    await $.get("/new_game");
-    game = new Chess();
-    board.start();
+    const response = await $.get("/new_game");
+    game = new Chess(response.initial_fen);
+    board.position(response.initial_fen);
     $("#moves").html("<b>Moves:</b>");
 }
 

@@ -2,11 +2,12 @@ from flask import Flask, render_template, request, session, jsonify
 import chess
 from stockfish import Stockfish
 import os
+import random
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512", parameters={"UCI_LimitStrength": True})
+stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512", parameters={"UCI_Chess960": True, "UCI_LimitStrength": True})
 stockfish.set_depth(5)
 stockfish.set_elo_rating(1500)
 
@@ -26,11 +27,17 @@ def index():
 
 @app.route("/new_game")
 def new_game():
-    board = chess.Board()
-    session["board"] = board.fen()
+    position_id = random.randint(0, 959)
+    board = chess.Board.from_chess960_pos(position_id)
+    # board.chess960 = True
+    save_board(board)
+    session["initial_fen"] = board.fen()
     session["moves"] = []
     session["undone_moves"] = []
-    return jsonify(status="ok")
+    return jsonify(
+        status="ok",
+        initial_fen=board.fen()
+    )
 
 @app.route("/make_move", methods=["POST"])
 def make_move():
@@ -42,23 +49,19 @@ def make_move():
         data = request.json
         move = data["move"]
 
-        if "=" in move:
-            move = move.replace("=", "")
-        
         try:
-            print(move)
-            chess_move = board.parse_san(move)
-            # print("good")
-        except Exception as e:
-            print(e)
-            return jsonify(status="error", message="Invalid move format")
+            chess_move = chess.Move.from_uci(move)
+        except ValueError:
+            return jsonify(status="error", message="Invalid UCI format")
             
         if chess_move not in board.legal_moves:
             return jsonify(status="error", message="Illegal move")
 
+        move_san = board.san(chess_move)
         board.push(chess_move)
-        session["moves"].append(move)
+        session["moves"].append(move_san)
 
+        print(chess_move)
         if board.outcome():
             print(board.outcome().termination)
             return jsonify(status="end",
@@ -146,7 +149,7 @@ def redo_move():
         return jsonify(status="error", message=str(e))
 
 def rebuild_board_from_moves(moves):
-    board = chess.Board()
+    board = chess.Board(fen=session["initial_fen"])
     for move_san in moves:
         if "=" in move_san:
             move_san = move_san.replace("=", "")
