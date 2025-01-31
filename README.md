@@ -1,4 +1,4 @@
-# Chess with Stockfish
+# Chess(960) with Stockfish
 
 ![demo](https://cloud-3i8kiyekj-hack-club-bot.vercel.app/0demo.png)
 
