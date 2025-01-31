@@ -3,6 +3,7 @@ let game = new Chess();
 var whiteSquareGrey = "#a9a9a9";
 var blackSquareGrey = "#696969";
 let pendingPromotion = null;
+let isChess960 = false;
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -232,8 +233,23 @@ async function redoMove() {
     }
 }
 
+function toggleMode() {
+    isChess960 = !isChess960;
+    updateModeButtonAndHeader();
+}
+
+function updateModeButtonAndHeader() {
+    const button = document.getElementById("modeToggle");
+    button.textContent = `${isChess960 ? "Switch to Standard Chess" : "Switch to Chess960"}`;
+
+    const header = document.getElementById("mode");
+    header.innerText = `${isChess960 ? "Chess 960" : "Standard Chess"}`;
+
+    newGame();
+}
+
 async function newGame() {
-    const response = await $.get("/new_game");
+    const response = await $.get(`/new_game?chess960=${isChess960}`);
     game = new Chess(response.initial_fen);
     board.position(response.initial_fen);
     $("#moves").html("<b>Moves:</b>");
@@ -242,4 +258,5 @@ async function newGame() {
 $(document).ready(function () {
     initBoard();
     newGame();
+    updateModeButton();
 });

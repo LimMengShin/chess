@@ -12,6 +12,8 @@
     <div class="container">
         <div id="board" style="width: 800px"></div>
         <div class="controls">
+            <h2 id="mode">Standard Chess</h2>
+            <button id="modeToggle" onclick="toggleMode()">Switch to Chess960</button>
             <button onclick="newGame()">New Game</button>
             <div class="elo-control">
                 <label>Engine Strength: <span id="eloValue">1500</span> ELO</label>

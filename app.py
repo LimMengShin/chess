@@ -7,7 +7,7 @@ import random
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
-stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512", parameters={"UCI_Chess960": True, "UCI_LimitStrength": True})
+stockfish = Stockfish(path="./stockfish-ubuntu-x86-64-vnni512", parameters={"UCI_LimitStrength": True})
 stockfish.set_depth(5)
 stockfish.set_elo_rating(1500)
 
@@ -27,9 +27,13 @@ def index():
 
 @app.route("/new_game")
 def new_game():
-    position_id = random.randint(0, 959)
-    board = chess.Board.from_chess960_pos(position_id)
-    # board.chess960 = True
+    chess960 = request.args.get("chess960", "true") == "true"
+    session["chess960"] = chess960
+    if chess960:
+        position_id = random.randint(0, 959)
+        board = chess.Board.from_chess960_pos(position_id)
+    else:
+        board = chess.Board()
     save_board(board)
     session["initial_fen"] = board.fen()
     session["moves"] = []
@@ -70,7 +74,7 @@ def make_move():
                            winner=board.outcome().winner)
 
         # get stockfish move
-        # print(stockfish.get_parameters())
+        stockfish.update_engine_parameters({"UCI_Chess960": True if session.get("chess960", True) else "false"})
         stockfish.set_fen_position(board.fen())
         engine_move = stockfish.get_best_move_time(50)
         engine_move_san = board.san(chess.Move.from_uci(engine_move))
