@@ -97,7 +97,7 @@ def make_move():
         # get top 3 moves by stockfish + evaluation
         new_board = get_board()
         stockfish.set_fen_position(new_board.fen())
-        stockfish.update_engine_parameters({"Threads": 2, "Hash": 256, "Skill Level": 20, "UCI_LimitStrength": "false"})
+        stockfish.update_engine_parameters({"Hash": 256, "Skill Level": 20, "UCI_LimitStrength": "false"})
         top_3_moves = stockfish.get_top_moves(3)
         evaluation = stockfish.get_evaluation()
         print(top_3_moves, evaluation)
