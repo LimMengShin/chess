@@ -91,7 +91,19 @@ function onSnapEnd () {
     }
 }
 
+function showLoading() {
+    const loader = document.getElementById('loading-container');
+    loader.style.display = 'flex';
+}
+
+function hideLoading() {
+    const loader = document.getElementById('loading-container');
+    loader.style.display = 'none';
+}
+
 async function submitMove(move) {
+    showLoading();
+
     try {
         let uci = move.from + move.to;
         if (move.promotion) {
@@ -105,6 +117,8 @@ async function submitMove(move) {
             data: JSON.stringify({ move: uci })
         });
         console.log(response);
+
+        hideLoading();
         
         game.load(response.fen);
         board.position(response.fen);
