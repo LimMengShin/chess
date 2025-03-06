@@ -49,7 +49,7 @@ Improve responsiveness for seamless play on smartphones and tablets.
 
 ## Demo
 
-Check out the live demo: [Chess Demo](https://chess.mengshin.me)
+Check out the live demo: [Chess Demo](https://chess.mengshin.dev)
 
 ## Running the Website
 
